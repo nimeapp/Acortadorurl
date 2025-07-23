@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Redirigiendo...</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      background-color: #6b21a8;
+      color: white;
+      font-family: sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+  </style>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDdvQ5aqXPit0NsNntASBYY7eDlLPMjzSE",
+      authDomain: "acortador-eb399.firebaseapp.com",
+      databaseURL: "https://acortador-eb399-default-rtdb.firebaseio.com",
+      projectId: "acortador-eb399",
+      storageBucket: "acortador-eb399.appspot.com",
+      messagingSenderId: "1004579192776",
+      appId: "1:1004579192776:web:5adf0bc74ffd5fccb0cafd"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("c");
+
+    if (code) {
+      const urlRef = ref(db, "urls/" + code);
+      get(urlRef).then((snapshot) => {
+        if (snapshot.exists()) {
+          window.location.href = snapshot.val();
+        } else {
+          document.body.innerHTML = "<h1>❌ Enlace no encontrado</h1>";
+        }
+      }).catch((error) => {
+        console.error(error);
+        document.body.innerHTML = "<h1>Error al acceder a la base de datos</h1>";
+      });
+    } else {
+      document.body.innerHTML = "<h1>❌ Código inválido</h1>";
+    }
+  </script>
+</head>
+<body>
+  <h1>Redirigiendo...</h1>
+</body>
+</html>
