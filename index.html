@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Acortador Firebase</title>
+  <title>Acortador de URL</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
@@ -29,7 +29,7 @@
     <div id="resultado" class="mt-6 hidden">
       <p class="text-purple-700 font-medium">Tu URL corta:</p>
       <div class="bg-purple-100 p-3 rounded-xl flex justify-between items-center mt-2">
-        <span id="shortUrl" class="text-purple-900 font-semibold"></span>
+        <span id="shortUrl" class="text-purple-900 font-semibold break-all"></span>
         <button onclick="copiarTexto()" class="text-purple-700 hover:text-purple-900" title="Copiar">
           <i data-lucide="copy"></i>
         </button>
@@ -37,7 +37,7 @@
     </div>
   </div>
 
-  <!-- Firebase SDKs -->
+  <!-- Firebase + lógica -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
     import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js";
@@ -55,37 +55,32 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // Función para generar un código corto
     function generarCodigo() {
       return Math.random().toString(36).substring(2, 8);
     }
 
-    // Función principal
     window.acortarURL = async function () {
       const input = document.getElementById("urlInput");
       const longUrl = input.value.trim();
 
       if (!longUrl.startsWith("http")) {
-        alert("URL inválida. Asegúrate de que comience con http:// o https://");
+        alert("URL inválida. Debe comenzar con http:// o https://");
         return;
       }
 
       const codigo = generarCodigo();
-      const shortUrl = `${window.location.origin}/redirect.html?c=${codigo}`;
+      const shortUrl = `${window.location.origin}/Acortadorurl/redirect.html?c=${codigo}`;
 
-      // Guardar en Firebase
       await set(ref(db, 'urls/' + codigo), longUrl);
 
-      // Mostrar resultado
       document.getElementById("shortUrl").textContent = shortUrl;
       document.getElementById("resultado").classList.remove("hidden");
     }
 
-    // Copiar URL al portapapeles
     window.copiarTexto = function () {
       const text = document.getElementById("shortUrl").textContent;
       navigator.clipboard.writeText(text).then(() => {
-        alert("¡URL copiada!");
+        alert("¡URL copiada al portapapeles!");
       });
     }
 
