@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Generador NAGI+</title>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #0f172a;
+      color: #f1f5f9;
+      font-family: 'Inter', sans-serif;
+    }
+    .hidden { display: none; }
+    .input-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .icon {
+      color: #38bdf8;
+    }
+    .preview {
+      background-size: cover;
+      background-position: center;
+    }
+    .suggestions {
+      position: absolute;
+      z-index: 10;
+      background: #1e293b;
+      border: 1px solid #334155;
+      max-height: 200px;
+      overflow-y: auto;
+      width: 100%;
+      border-radius: 0.5rem;
+    }
+    .suggestion-item {
+      padding: 0.5rem;
+      cursor: pointer;
+    }
+    .suggestion-item:hover {
+      background: #334155;
+    }
+  </style>
+</head>
+<body class="p-6">
+  <div class="max-w-xl mx-auto bg-gray-800 rounded-xl shadow-lg p-6 relative">
+    <h1 class="text-2xl font-bold mb-4 flex items-center gap-2">
+      <i data-lucide="link-2" class="icon"></i>
+      Generador de URL TMDB
+    </h1>
+
+    <div class="mb-4 relative">
+      <div class="input-group">
+        <i data-lucide="search" class="icon"></i>
+        <input type="text" id="searchTMDB" placeholder="Buscar película o serie..."
+          class="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-sky-500">
+      </div>
+      <div id="suggestions" class="suggestions hidden"></div>
+    </div>
+
+    <form id="urlForm" class="space-y-4">
+      <div>
+        <label class="font-semibold">Tipo de contenido:</label>
+        <div class="flex gap-4 mt-2">
+          <label class="flex items-center gap-2">
+            <input type="radio" name="contentType" value="movie" checked class="accent-sky-500">
+            <i data-lucide="film" class="icon"></i> Película
+          </label>
+          <label class="flex items-center gap-2">
+            <input type="radio" name="contentType" value="tv" class="accent-sky-500">
+            <i data-lucide="tv" class="icon"></i> Serie
+          </label>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <i data-lucide="key" class="icon"></i>
+        <input type="text" id="idtmdb" placeholder="ID TMDB" required
+          class="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-sky-500">
+      </div>
+
+      <div id="serieFields" class="space-y-2 hidden">
+        <div class="input-group">
+          <i data-lucide="folder-plus" class="icon"></i>
+          <input type="number" id="temporada" placeholder="Temporada"
+            class="w-full p-2 rounded bg-gray-700 border border-gray-600">
+        </div>
+        <div class="input-group">
+          <i data-lucide="folder-plus" class="icon"></i>
+          <input type="number" id="capitulo" placeholder="Capítulo"
+            class="w-full p-2 rounded bg-gray-700 border border-gray-600">
+        </div>
+      </div>
+
+      <div class="input-group">
+        <i data-lucide="video" class="icon"></i>
+        <input type="text" id="linkmp4" placeholder="Link MP4" required
+          class="w-full p-2 rounded bg-gray-700 border border-gray-600">
+      </div>
+
+      <div class="input-group">
+        <i data-lucide="list-video" class="icon"></i>
+        <input type="text" id="sig" placeholder="Siguiente episodio (URL)"
+          class="w-full p-2 rounded bg-gray-700 border border-gray-600">
+      </div>
+
+      <div class="input-group">
+        <i data-lucide="layers" class="icon"></i>
+        <input type="text" id="capitulos" placeholder="Total de capítulos"
+          class="w-full p-2 rounded bg-gray-700 border border-gray-600">
+      </div>
+
+      <div class="input-group">
+        <i data-lucide="skip-forward" class="icon"></i>
+        <input type="number" id="intro" placeholder="Segundos para saltar intro (opcional)"
+          class="w-full p-2 rounded bg-gray-700 border border-gray-600">
+      </div>
+
+      <button type="submit" class="w-full bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 rounded flex items-center justify-center gap-2">
+        <i data-lucide="wand-2"></i> Generar URL
+      </button>
+    </form>
+
+    <div id="resultContainer" class="mt-6 hidden">
+      <div class="input-group">
+        <i data-lucide="link" class="icon"></i>
+        <input id="generatedURL" readonly
+          class="w-full p-2 rounded bg-gray-700 border border-gray-600">
+        <button onclick="copyURL()" class="bg-green-500 hover:bg-green-600 text-white px-3 rounded flex items-center gap-1">
+          <i data-lucide="clipboard"></i> Copiar
+        </button>
+      </div>
+      <a id="openPlayer" href="#" target="_blank" class="mt-2 inline-block bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded flex items-center gap-2">
+        <i data-lucide="play-circle"></i> Abrir en Reproductor
+      </a>
+    </div>
+
+    <div id="advancedPreview" class="mt-6 hidden">
+      <h2 class="text-xl font-bold mb-2 flex items-center gap-2">
+        <i data-lucide="eye"></i> Vista previa
+      </h2>
+      <iframe id="iframePreview" class="w-full rounded-lg shadow-lg h-64 border border-gray-700"></iframe>
+    </div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+    const apiKey = "f91aff7a5c1524c5db2d8b5864747dd6";
+
+    const serieFields = document.getElementById('serieFields');
+    document.querySelectorAll('input[name="contentType"]').forEach(radio => {
+      radio.addEventListener('change', () => {
+        serieFields.classList.toggle('hidden', radio.value !== "tv");
+      });
+    });
+
+    const searchInput = document.getElementById('searchTMDB');
+    const suggestionsBox = document.getElementById('suggestions');
+    const idtmdbInput = document.getElementById('idtmdb');
+
+    searchInput.addEventListener('input', async () => {
+      const query = searchInput.value.trim();
+      if (query.length < 2) {
+        suggestionsBox.classList.add('hidden');
+        return;
+      }
+
+      const contentType = document.querySelector('input[name="contentType"]:checked').value;
+      const url = `https://api.themoviedb.org/3/search/${contentType}?api_key=${apiKey}&language=es-ES&query=${encodeURIComponent(query)}`;
+
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+
+        suggestionsBox.innerHTML = '';
+        data.results.slice(0, 5).forEach(item => {
+          const div = document.createElement('div');
+          div.className = 'suggestion-item';
+          div.textContent = contentType === 'movie' ? item.title : item.name;
+          div.onclick = () => {
+            idtmdbInput.value = item.id;
+            searchInput.value = div.textContent;
+            suggestionsBox.classList.add('hidden');
+          };
+          suggestionsBox.appendChild(div);
+        });
+        suggestionsBox.classList.remove('hidden');
+      } catch (err) {
+        console.error('Error al buscar en TMDB:', err);
+      }
+    });
+
+    const form = document.getElementById('urlForm');
+    const resultContainer = document.getElementById('resultContainer');
+    const generatedURL = document.getElementById('generatedURL');
+    const openPlayer = document.getElementById('openPlayer');
+    const iframePreview = document.getElementById('iframePreview');
+    const advancedPreview = document.getElementById('advancedPreview');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const contentType = document.querySelector('input[name="contentType"]:checked').value;
+      const idtmdb = document.getElementById('idtmdb').value;
+      const linkmp4 = document.getElementById('linkmp4').value;
+      const temporada = document.getElementById('temporada').value;
+      const capitulo = document.getElementById('capitulo').value;
+      const sig = document.getElementById('sig').value;
+      const capitulos = document.getElementById('capitulos').value;
+      const intro = document.getElementById('intro').value || 0;
+
+      let titulo = "";
+      let poster = "";
+
+      try {
+        const url = `https://api.themoviedb.org/3/${contentType}/${idtmdb}?api_key=${apiKey}&language=es-ES`;
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data && data.poster_path) {
+          poster = `https://image.tmdb.org/t/p/original${data.poster_path}`;
+          titulo = contentType === "movie" ? data.title : data.name;
+        } else {
+          alert("No se encontró poster para ese ID TMDB.");
+          return;
+        }
+      } catch (err) {
+        alert("Error al obtener datos de TMDB.");
+        return;
+      }
+
+      if (contentType === "tv" && temporada && capitulo) {
+        titulo += ` (T${temporada} - E${capitulo})`;
+      }
+
+      const baseURL = "https://nagi-plus4.github.io/generador/REP-PRUEVA.html";
+      const params = new URLSearchParams({
+        linkmp4, titulo, sig, capitulos, poster, intro
+      });
+
+      const finalURL = `${baseURL}?${params.toString()}`;
+      generatedURL.value = finalURL;
+      openPlayer.href = finalURL;
+      iframePreview.src = finalURL;
+      resultContainer.classList.remove('hidden');
+      advancedPreview.classList.remove('hidden');
+    });
+
+    function copyURL() {
+      generatedURL.select();
+      document.execCommand("copy");
+      alert("URL copiada al portapapeles");
+    }
+  </script>
+</body>
+</html>
